@@ -1,12 +1,13 @@
 /**
- * Feature 2 — Todo List Management
- * Spec: features/feature-2-todo-list-management.md
+ * Features 2 & 3 — Todo List Management, Todo List Item Management
+ * Specs: features/feature-2-todo-list-management.md, features/feature-3-todo-list-item-management.md
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { flushPromises } from "@vue/test-utils";
 import Dashboard from "../src/views/Dashboard.vue";
 import listServices from "../src/services/listServices.js";
+import todoServices from "../src/services/todoServices.js";
 import { mountWithPlugins } from "./testUtils.js";
 
 vi.mock("../src/services/listServices.js", () => ({
@@ -15,6 +16,15 @@ vi.mock("../src/services/listServices.js", () => ({
     createList: vi.fn(),
     updateList: vi.fn(),
     deleteList: vi.fn(),
+  },
+}));
+
+vi.mock("../src/services/todoServices.js", () => ({
+  default: {
+    getTodos: vi.fn(),
+    createTodo: vi.fn(),
+    updateTodo: vi.fn(),
+    deleteTodo: vi.fn(),
   },
 }));
 
@@ -140,6 +150,7 @@ async function openItemsDialog(wrapper, listName) {
 describe("Feature 2 — Dashboard lists view", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    todoServices.getTodos.mockResolvedValue({ data: [] });
   });
 
   describe("US-2.2 — View my lists", () => {
@@ -260,3 +271,172 @@ describe("Feature 2 — Dashboard lists view", () => {
     });
   });
 });
+
+describe("Feature 3 — Dashboard items dialogs", () => {
+  const mountedWrappers = [];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    listServices.getLists.mockResolvedValue({ data: [workList, personalList, groceriesList] });
+    todoServices.getTodos.mockResolvedValue({ data: [] });
+  });
+
+  afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+    document.body.innerHTML = "";
+  });
+
+  async function mountFeature3Dashboard() {
+    const wrapper = await mountDashboard();
+    mountedWrappers.push(wrapper);
+    return wrapper;
+  }
+
+  describe("US-3.1 — Add tasks to a list", () => {
+    it("User adds a todo to a list via dialog", async () => {
+      todoServices.createTodo.mockResolvedValue({ data: milkTodo });
+
+      const wrapper = await mountFeature3Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+      await clickBodyButton("+ Add Item");
+
+      const titleField = wrapper
+        .findAllComponents({ name: "VTextField" })
+        .find((field) => field.props("label") === "Todo title");
+      await titleField.setValue("Buy milk");
+      await clickBodyButton("Add");
+
+      expect(todoServices.getTodos).toHaveBeenCalledWith(3);
+      expect(todoServices.createTodo).toHaveBeenCalledWith(3, "Buy milk");
+      expect(pageText()).toContain("Buy milk");
+    });
+
+    it("User adds a todo with an empty title", async () => {
+      const wrapper = await mountFeature3Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+      await clickBodyButton("+ Add Item");
+      await clickBodyButton("Add");
+
+      expect(pageText()).toContain("Todo title is required.");
+      expect(todoServices.createTodo).not.toHaveBeenCalled();
+    });
+
+    it("Add item is only available inside the items dialog", async () => {
+      const wrapper = await mountFeature3Dashboard();
+
+      expect(wrapper.text()).not.toContain("+ Add Item");
+      expect(todoServices.getTodos).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("US-3.2 — View tasks in a list", () => {
+    it("List items dialog shows empty state", async () => {
+      const wrapper = await mountFeature3Dashboard();
+      await openItemsDialog(wrapper, "Personal");
+
+      expect(todoServices.getTodos).toHaveBeenCalledWith(2);
+      expect(pageText()).toContain("No todos in this list yet.");
+    });
+
+    it("User opens items for different lists", async () => {
+      todoServices.getTodos.mockImplementation((listId) => {
+        if (listId === 1) {
+          return Promise.resolve({ data: workTodos });
+        }
+        if (listId === 2) {
+          return Promise.resolve({ data: personalTodos });
+        }
+        return Promise.resolve({ data: [] });
+      });
+
+      const wrapper = await mountFeature3Dashboard();
+
+      await openItemsDialog(wrapper, "Personal");
+      expect(pageText()).toContain("Call mom");
+      expect(pageText()).not.toContain("Email client");
+
+      await clickBodyButton("Close");
+
+      await openItemsDialog(wrapper, "Work");
+      expect(pageText()).toContain("Email client");
+      expect(pageText()).toContain("Write report");
+      expect(pageText()).not.toContain("Call mom");
+    });
+  });
+
+  describe("US-3.3 — Complete tasks", () => {
+    it("User marks a todo as complete", async () => {
+      todoServices.getTodos.mockResolvedValue({ data: [milkTodo] });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...milkTodo, completed: true },
+      });
+
+      const wrapper = await mountFeature3Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+
+      const checkbox = wrapper.findComponent({ name: "VCheckbox" });
+      await checkbox.vm.$emit("update:modelValue", true);
+      await flushPromises();
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(30, { completed: true });
+      expect(wrapper.findComponent({ name: "VCheckbox" }).props("modelValue")).toBe(true);
+    });
+
+    it("User marks a completed todo as incomplete", async () => {
+      const completedMilk = { ...milkTodo, completed: true };
+      todoServices.getTodos.mockResolvedValue({ data: [completedMilk] });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...milkTodo, completed: false },
+      });
+
+      const wrapper = await mountFeature3Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+
+      const checkbox = wrapper.findComponent({ name: "VCheckbox" });
+      await checkbox.vm.$emit("update:modelValue", false);
+      await flushPromises();
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(30, { completed: false });
+      expect(wrapper.findComponent({ name: "VCheckbox" }).props("modelValue")).toBe(false);
+    });
+  });
+
+  describe("US-3.4 — Edit and remove tasks", () => {
+    it("User edits a todo title", async () => {
+      todoServices.getTodos.mockResolvedValue({ data: [milkTodo] });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...milkTodo, title: "Buy oat milk" },
+      });
+
+      const wrapper = await mountFeature3Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+
+      await clickBodyAriaLabel("Edit todo");
+
+      const editField = getTodoTitleField(wrapper);
+      await editField.setValue("Buy oat milk");
+      await clickLastBodyButton("Save");
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(30, {
+        title: "Buy oat milk",
+        dueDate: null,
+      });
+      expect(pageText()).toContain("Buy oat milk");
+    });
+
+    it("User deletes a todo", async () => {
+      todoServices.getTodos.mockResolvedValue({ data: [milkTodo] });
+      todoServices.deleteTodo.mockResolvedValue({});
+
+      const wrapper = await mountFeature3Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+
+      await clickBodyAriaLabel("Delete todo");
+      await clickLastBodyButton("Delete");
+
+      expect(todoServices.deleteTodo).toHaveBeenCalledWith(30);
+      expect(pageText()).not.toContain("Buy milk");
+    });
+  });
+});
+

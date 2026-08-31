@@ -1,7 +1,7 @@
 # API Reference
 
 **Base path:** `/todo/`  
-**Status:** Features 1–2 — authentication and list CRUD.  
+**Status:** Integrated API through **Feature 5** (authentication, lists, todos with optional due dates, user profile).  
 **Authority for new work:** feature specs in `features/` — update this file in the same PR when routes or payloads change.
 
 **Auth:** Send `Authorization: Bearer <token>` on protected routes.  
@@ -13,6 +13,9 @@
 |------|---------|
 | Register, login, logout | 1 |
 | List CRUD (`GET/POST/PUT/DELETE /todo/lists`) | 2 |
+| Todo CRUD (`GET/POST /todo/lists/:listId/todos`, `PUT/DELETE /todo/todos/:id`) | 3 |
+| User profile (`GET/PUT /todo/users/:id`) | 4 |
+| Todo `dueDate` on create/update | 5 |
 
 ---
 
@@ -76,12 +79,12 @@
 | `PUT` | `/todo/lists/:listId` | Yes | Rename a list |
 | `DELETE` | `/todo/lists/:listId` | Yes | Delete a list owned by the caller |
 
-**Create list request body:**
+**Create / rename body:**
 ```json
 { "name": "Groceries" }
 ```
 
-**List success response** (`200` / `201`):
+**List success** (`200` / `201`):
 ```json
 {
   "id": 1,
@@ -92,4 +95,66 @@
 }
 ```
 
-**Not found / not owned:** `404` with `{ "message": "List with id=<id> not found." }` (do not use `403`).
+**Delete success** (`200`):
+```json
+{ "message": "List deleted successfully." }
+```
+
+**Validation errors:** empty/whitespace name `400` with `"List name is required."`; name > 100 chars `400` with `"List name must be 100 characters or fewer."`; invalid `listId` `400`; unowned list `404` with `"List with id=<id> not found."`
+
+---
+
+## Todos (Feature 3)
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `GET` | `/todo/lists/:listId/todos` | Yes | Todos in an owned list (incomplete first, then `createdAt` ASC) |
+| `POST` | `/todo/lists/:listId/todos` | Yes | Add a todo to an owned list |
+| `PUT` | `/todo/todos/:id` | Yes | Update title and/or `completed` |
+| `DELETE` | `/todo/todos/:id` | Yes | Delete a todo owned by the caller |
+
+**Create body:**
+```json
+{
+  "title": "Buy milk",
+  "dueDate": "2026-07-15"
+}
+```
+
+`dueDate` is optional. Omit it or send `null` for no due date.
+
+**Update body** (any combination; omit a field to leave it unchanged except `dueDate: null` clears the date):
+```json
+{
+  "title": "Buy oat milk",
+  "completed": true,
+  "dueDate": "2026-07-20"
+}
+```
+
+Clear due date:
+```json
+{ "dueDate": null }
+```
+
+**Todo success** (`200` / `201`):
+```json
+{
+  "id": 10,
+  "listId": 1,
+  "title": "Buy milk",
+  "completed": false,
+  "dueDate": "2026-07-15",
+  "userId": 42,
+  "createdAt": "2026-07-02T12:05:00.000Z",
+  "updatedAt": "2026-07-02T12:05:00.000Z"
+}
+```
+
+`dueDate` is `null` when not set.
+
+**Delete success** (`200`):
+```json
+{ "message": "Todo deleted successfully." }
+```
+
