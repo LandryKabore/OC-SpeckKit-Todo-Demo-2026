@@ -440,3 +440,117 @@ describe("Feature 3 — Dashboard items dialogs", () => {
   });
 });
 
+describe("Feature 5 — Dashboard due dates", () => {
+  const mountedWrappers = [];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+    todoServices.getTodos.mockResolvedValue({ data: [] });
+  });
+
+  afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+    document.body.innerHTML = "";
+    vi.useRealTimers();
+  });
+
+  async function mountFeature5Dashboard() {
+    const wrapper = await mountDashboard();
+    mountedWrappers.push(wrapper);
+    return wrapper;
+  }
+
+  describe("US-5.1 — Set a due date when creating a todo", () => {
+    it("User adds a todo with a due date", async () => {
+      todoServices.createTodo.mockResolvedValue({
+        data: { ...milkTodo, dueDate: "2026-07-15" },
+      });
+
+      const wrapper = await mountFeature5Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+      await clickBodyButton("+ Add Item");
+
+      await getTodoTitleField(wrapper).setValue("Buy milk");
+      await getDueDateField(wrapper).setValue("2026-07-15");
+      await clickBodyButton("Add");
+
+      expect(todoServices.createTodo).toHaveBeenCalledWith(3, "Buy milk", "2026-07-15");
+      expect(pageText()).toContain("Due");
+    });
+  });
+
+  describe("US-5.3 — Edit or clear a due date", () => {
+    it("User sets a due date when editing a todo", async () => {
+      todoServices.getTodos.mockResolvedValue({ data: [milkTodo] });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...milkTodo, dueDate: "2026-07-20" },
+      });
+
+      const wrapper = await mountFeature5Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+      await clickBodyAriaLabel("Edit todo");
+
+      await getDueDateField(wrapper).setValue("2026-07-20");
+      await clickLastBodyButton("Save");
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(30, {
+        title: "Buy milk",
+        dueDate: "2026-07-20",
+      });
+      expect(pageText()).toContain("Due");
+    });
+
+    it("User clears a due date when editing a todo", async () => {
+      todoServices.getTodos.mockResolvedValue({
+        data: [{ ...milkTodo, dueDate: "2026-07-20" }],
+      });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...milkTodo, dueDate: null },
+      });
+
+      const wrapper = await mountFeature5Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+      await clickBodyAriaLabel("Edit todo");
+
+      await getDueDateField(wrapper).setValue("");
+      await clickLastBodyButton("Save");
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(30, {
+        title: "Buy milk",
+        dueDate: null,
+      });
+    });
+  });
+
+  describe("US-5.4 — Spot overdue todos", () => {
+    it("Incomplete todo past due date is styled as overdue", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-07-10T12:00:00"));
+
+      todoServices.getTodos.mockResolvedValue({
+        data: [{ ...milkTodo, dueDate: "2026-07-09" }],
+      });
+
+      const wrapper = await mountFeature5Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+
+      expect(document.body.querySelector(".text-error")).not.toBeNull();
+    });
+
+    it("Completed todo past due date is not styled as overdue", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-07-10T12:00:00"));
+
+      todoServices.getTodos.mockResolvedValue({
+        data: [{ ...milkTodo, dueDate: "2026-07-09", completed: true }],
+      });
+
+      const wrapper = await mountFeature5Dashboard();
+      await openItemsDialog(wrapper, "Groceries");
+
+      expect(document.body.querySelector(".text-error")).toBeNull();
+    });
+  });
+});
+
