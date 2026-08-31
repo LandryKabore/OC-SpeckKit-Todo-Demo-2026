@@ -88,3 +88,23 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Shared `emailRules` for register and Edit Profile | `frontend/src/config/validation.js` | Features 1, 4 |
 | After profile save: refresh `localStorage` `user` and dispatch `user-logged-in` | MenuBar | Feature 4 |
 | MenuBar: user icon → profile dropdown (name, username, email); **Log out** in dropdown only (no standalone **Sign out**) | MenuBar | Features 2→4 |
+| MenuBar hidden on login and register routes | `App.vue` | Feature 2 |
+
+## Errors (product convention)
+
+| Rule | Enforcement | Introduced |
+|------|-------------|------------|
+| Error body shape `{ "message": "Human-readable explanation." }` | Controllers | Features 1+ |
+| Validation / client spoof failures use `400` where specified; missing/unowned resources use `404` | Controllers | Features 1–5 |
+
+---
+
+## How to use
+
+| Question | Look here |
+|----------|-----------|
+| What rule is in force now? | This file |
+| Why was this rule chosen? | Feature FR / Gherkin, or ADR |
+| Exact scenario / test name | Introducing `feature-N-*.md` Test Coverage Map |
+| Routes and payloads | [api.md](./api.md) |
+| Tables and columns | [data-model.md](./data-model.md) |

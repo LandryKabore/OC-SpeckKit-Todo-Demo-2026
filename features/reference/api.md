@@ -158,3 +158,43 @@ Clear due date:
 { "message": "Todo deleted successfully." }
 ```
 
+**Validation errors:** empty/whitespace title `400` with `"Todo title is required."`; title > 255 chars `400` with `"Todo title must be 255 characters or fewer."`; invalid `dueDate` `400` with `"Due date must be a valid date in YYYY-MM-DD format."`; invalid ids `400`; unowned list/todo `404` with `"List with id=<id> not found."` or `"Todo with id=<id> not found."`
+
+---
+
+## User profile (Feature 4)
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `GET` | `/todo/users/:id` | Yes | Fetch caller's own profile (`:id` must equal `req.user.id`) |
+| `PUT` | `/todo/users/:id` | Yes | Update caller's own profile |
+
+**Update body:**
+```json
+{
+  "fName": "Jane",
+  "lName": "Doe",
+  "email": "jane@example.com",
+  "username": "jdoe",
+  "password": "newpassword123"
+}
+```
+
+`password` is optional. Omit it to leave the current password unchanged.
+
+**Profile success** (`200`):
+```json
+{
+  "id": 42,
+  "fName": "Jane",
+  "lName": "Doe",
+  "email": "jane@example.com",
+  "username": "jdoe",
+  "role": "worker",
+  "createdAt": "2026-07-02T12:00:00.000Z",
+  "updatedAt": "2026-07-02T12:05:00.000Z"
+}
+```
+
+Password hash is never returned.
+
