@@ -32,7 +32,18 @@ app.use(morgan("combined", { stream: logger.stream }));
 
 app.use(
   cors({
-    origin: "http://localhost:8082",
+    origin(origin, callback) {
+      if (
+        !origin ||
+        /^http:\/\/localhost:\d+$/.test(origin) ||
+        /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );

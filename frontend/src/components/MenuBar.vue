@@ -30,14 +30,7 @@ const confirmPasswordRules = [
   (value) => !password.value || value === password.value || "Passwords do not match.",
 ];
 
-const displayName = computed(() => {
-  if (!user.value) {
-    return "";
-  }
-
-  const parts = [user.value.fName, user.value.lName].filter(Boolean);
-  return parts.length ? parts.join(" ") : user.value.username ?? "";
-});
+const displayName = computed(() => Utils.getUserDisplayName(user.value));
 
 const refreshUser = () => {
   user.value = Utils.getStore("user");
@@ -147,40 +140,60 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <v-app-bar color="primary" density="comfortable">
-    <v-app-bar-title>Todo</v-app-bar-title>
+  <v-app-bar color="primary" density="comfortable" elevation="2">
+    <template #prepend>
+      <v-icon icon="mdi-checkbox-marked-circle-outline" class="ml-2 mr-1" />
+    </template>
+
+    <v-app-bar-title class="font-weight-bold">Todo</v-app-bar-title>
 
     <v-spacer />
 
-    <v-menu v-if="user" v-model="profileMenuOpen" :close-on-content-click="false">
+    <v-menu
+      v-if="user"
+      v-model="profileMenuOpen"
+      :close-on-content-click="false"
+      location="bottom end"
+      offset="8"
+    >
       <template #activator="{ props: menuProps }">
         <v-btn
           v-bind="menuProps"
-          icon="mdi-account-circle"
           variant="text"
           color="white"
+          class="profile-menu-btn text-none"
           aria-label="Open profile menu"
-        />
+        >
+          <v-icon icon="mdi-account-circle" start />
+          <span class="profile-menu-btn__name">{{ displayName }}</span>
+          <v-icon icon="mdi-chevron-down" end size="18" />
+        </v-btn>
       </template>
 
-      <v-card min-width="300">
-        <v-list density="comfortable">
-          <v-list-item :title="displayName">
-            <template #subtitle>
-              <div>{{ user.username }}</div>
-              <div>{{ user.email }}</div>
-            </template>
-          </v-list-item>
-        </v-list>
+      <v-card class="profile-menu-card" min-width="300" rounded="lg">
+        <v-card-item class="profile-menu-card__header">
+          <template #prepend>
+            <v-avatar color="primary" size="44">
+              <v-icon icon="mdi-account" color="white" />
+            </v-avatar>
+          </template>
+
+          <v-card-title class="profile-menu-card__name">{{ displayName }}</v-card-title>
+          <v-card-subtitle class="profile-menu-card__meta">
+            <div>@{{ user.username }}</div>
+            <div>{{ user.email }}</div>
+          </v-card-subtitle>
+        </v-card-item>
 
         <v-divider />
 
-        <v-card-actions class="px-4 py-2">
+        <v-card-actions class="px-4 py-3">
           <v-btn
             color="primary"
             variant="elevated"
             class="oc-cta"
             block
+            prepend-icon="mdi-account-edit"
             @click="openEditDialog"
           >
             Edit Profile
@@ -189,14 +202,18 @@ const handleLogout = async () => {
 
         <v-divider />
 
-        <v-list density="compact">
-          <v-list-item
-            title="Log out"
+        <v-card-actions class="px-4 py-3">
+          <v-btn
+            variant="outlined"
+            color="error"
+            block
             prepend-icon="mdi-logout"
-            :disabled="loggingOut"
+            :loading="loggingOut"
             @click="handleLogout"
-          />
-        </v-list>
+          >
+            Log out
+          </v-btn>
+        </v-card-actions>
       </v-card>
     </v-menu>
 
@@ -291,3 +308,34 @@ const handleLogout = async () => {
     </v-dialog>
   </v-app-bar>
 </template>
+
+<style scoped>
+.profile-menu-btn {
+  max-width: 240px;
+  letter-spacing: 0.01em;
+}
+
+.profile-menu-btn__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-menu-card__header {
+  padding: 16px 16px 12px;
+}
+
+.profile-menu-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+  padding: 0;
+  line-height: 1.3;
+}
+
+.profile-menu-card__meta {
+  opacity: 0.8;
+  padding: 0;
+  line-height: 1.45;
+}
+</style>

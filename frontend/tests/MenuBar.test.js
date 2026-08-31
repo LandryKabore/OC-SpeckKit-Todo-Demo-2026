@@ -153,7 +153,7 @@ describe("Feature 4 — MenuBar profile", () => {
       const wrapper = await mountMenuBar();
       await openProfileMenu(wrapper);
 
-      findBodyListItem("Log out").click();
+      findBodyButton("Log out").click();
       await flushPromises();
 
       expect(authServices.logoutUser).toHaveBeenCalled();

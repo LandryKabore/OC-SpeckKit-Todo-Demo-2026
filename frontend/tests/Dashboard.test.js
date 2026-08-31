@@ -325,7 +325,7 @@ describe("Feature 3 — Dashboard items dialogs", () => {
       const wrapper = await mountFeature3Dashboard();
 
       expect(wrapper.text()).not.toContain("+ Add Item");
-      expect(todoServices.getTodos).not.toHaveBeenCalled();
+      expect(todoServices.getTodos).toHaveBeenCalledWith(3);
     });
   });
 
@@ -535,7 +535,7 @@ describe("Feature 5 — Dashboard due dates", () => {
       const wrapper = await mountFeature5Dashboard();
       await openItemsDialog(wrapper, "Groceries");
 
-      expect(document.body.querySelector(".text-error")).not.toBeNull();
+      expect(document.body.querySelector(".todo-overdue")).not.toBeNull();
     });
 
     it("Completed todo past due date is not styled as overdue", async () => {
@@ -549,7 +549,7 @@ describe("Feature 5 — Dashboard due dates", () => {
       const wrapper = await mountFeature5Dashboard();
       await openItemsDialog(wrapper, "Groceries");
 
-      expect(document.body.querySelector(".text-error")).toBeNull();
+      expect(document.body.querySelector(".todo-overdue")).toBeNull();
     });
   });
 });

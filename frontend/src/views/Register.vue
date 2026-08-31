@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import AuthLayout from "../components/AuthLayout.vue";
 import authServices from "../services/authServices.js";
 import Utils from "../config/utils.js";
 import { emailRules } from "../config/validation.js";
@@ -51,7 +52,7 @@ const handleSubmit = async () => {
     window.dispatchEvent(new CustomEvent("user-logged-in"));
     await router.push({ name: "home" });
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || "Registration failed.";
+    errorMessage.value = Utils.getAuthErrorMessage(error, "Registration failed.");
   } finally {
     loading.value = false;
   }
@@ -59,107 +60,106 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <v-container class="fill-height">
-    <v-row align="center" justify="center" class="fill-height">
-      <v-col cols="12" sm="10" md="7" lg="5">
-        <v-card elevation="2">
-          <v-card-title class="text-h5">Create account</v-card-title>
+  <AuthLayout
+    title="Create account"
+    subtitle="Start organizing your tasks in minutes."
+    wide
+  >
+    <v-form ref="form" @submit.prevent="handleSubmit">
+      <v-row>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="fName"
+            label="First name"
+            prepend-inner-icon="mdi-account-outline"
+            autocomplete="given-name"
+            :rules="fNameRules"
+          />
+        </v-col>
 
-          <v-card-text>
-            <v-form ref="form" @submit.prevent="handleSubmit">
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model="fName"
-                    label="First name"
-                    density="comfortable"
-                    autocomplete="given-name"
-                    :rules="fNameRules"
-                  />
-                </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="lName"
+            label="Last name"
+            autocomplete="family-name"
+            :rules="lNameRules"
+          />
+        </v-col>
 
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model="lName"
-                    label="Last name"
-                    density="comfortable"
-                    autocomplete="family-name"
-                    :rules="lNameRules"
-                  />
-                </v-col>
+        <v-col cols="12">
+          <v-text-field
+            v-model="email"
+            label="Email"
+            type="email"
+            prepend-inner-icon="mdi-email-outline"
+            autocomplete="email"
+            :rules="emailRules"
+          />
+        </v-col>
 
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="email"
-                    label="Email"
-                    type="email"
-                    density="comfortable"
-                    autocomplete="email"
-                    :rules="emailRules"
-                  />
-                </v-col>
+        <v-col cols="12">
+          <v-text-field
+            v-model="username"
+            label="Username"
+            prepend-inner-icon="mdi-at"
+            autocomplete="username"
+            :rules="usernameRules"
+          />
+        </v-col>
 
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="username"
-                    label="Username"
-                    density="comfortable"
-                    autocomplete="username"
-                    :rules="usernameRules"
-                  />
-                </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="password"
+            label="Password"
+            type="password"
+            prepend-inner-icon="mdi-lock-outline"
+            autocomplete="new-password"
+            :rules="passwordRules"
+          />
+        </v-col>
 
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model="password"
-                    label="Password"
-                    type="password"
-                    density="comfortable"
-                    autocomplete="new-password"
-                    :rules="passwordRules"
-                  />
-                </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="confirmPassword"
+            label="Confirm password"
+            type="password"
+            prepend-inner-icon="mdi-lock-check-outline"
+            autocomplete="new-password"
+            :rules="confirmPasswordRules"
+          />
+        </v-col>
+      </v-row>
 
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model="confirmPassword"
-                    label="Confirm password"
-                    type="password"
-                    density="comfortable"
-                    autocomplete="new-password"
-                    :rules="confirmPasswordRules"
-                  />
-                </v-col>
-              </v-row>
+      <v-alert
+        v-if="errorMessage"
+        type="error"
+        variant="tonal"
+        density="comfortable"
+        class="auth-error-alert mb-4 mt-2"
+        icon="mdi-alert-circle-outline"
+        border="start"
+      >
+        {{ errorMessage }}
+      </v-alert>
 
-              <v-alert
-                v-if="errorMessage"
-                type="error"
-                density="compact"
-                class="mb-4"
-              >
-                {{ errorMessage }}
-              </v-alert>
+      <v-btn
+        type="submit"
+        color="primary"
+        variant="elevated"
+        size="large"
+        rounded="lg"
+        block
+        class="oc-cta auth-submit-btn"
+        :loading="loading"
+      >
+        Create account
+      </v-btn>
+    </v-form>
 
-              <v-btn
-                type="submit"
-                color="primary"
-                variant="elevated"
-                block
-                :loading="loading"
-              >
-                Create account
-              </v-btn>
-            </v-form>
-          </v-card-text>
-
-          <v-card-actions>
-            <v-btn variant="text" :to="{ name: 'login' }">
-              Already have an account? Sign in
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+    <template #footer>
+      <v-btn variant="text" :to="{ name: 'login' }" block>
+        Already have an account? Sign in
+      </v-btn>
+    </template>
+  </AuthLayout>
 </template>
