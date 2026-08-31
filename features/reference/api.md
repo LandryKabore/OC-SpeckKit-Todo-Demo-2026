@@ -1,7 +1,7 @@
 # API Reference
 
 **Base path:** `/todo/`  
-**Status:** Feature 1 — authentication only.  
+**Status:** Features 1–2 — authentication and list CRUD.  
 **Authority for new work:** feature specs in `features/` — update this file in the same PR when routes or payloads change.
 
 **Auth:** Send `Authorization: Bearer <token>` on protected routes.  
@@ -12,7 +12,7 @@
 | Area | Feature |
 |------|---------|
 | Register, login, logout | 1 |
-| `GET /todo/lists` (read-only; empty array until Feature 2) | 1 (test harness) |
+| List CRUD (`GET/POST/PUT/DELETE /todo/lists`) | 2 |
 
 ---
 
@@ -67,10 +67,29 @@
 
 ---
 
-## Lists (read-only stub for Feature 1 tests)
+## Lists (Feature 2)
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | `GET` | `/todo/lists` | Yes | Lists owned by caller (array, ordered by `name` ASC) |
+| `POST` | `/todo/lists` | Yes | Create a new list |
+| `PUT` | `/todo/lists/:listId` | Yes | Rename a list |
+| `DELETE` | `/todo/lists/:listId` | Yes | Delete a list owned by the caller |
 
-Full list CRUD arrives in Feature 2.
+**Create list request body:**
+```json
+{ "name": "Groceries" }
+```
+
+**List success response** (`200` / `201`):
+```json
+{
+  "id": 1,
+  "name": "Groceries",
+  "userId": 42,
+  "createdAt": "2026-07-02T12:00:00.000Z",
+  "updatedAt": "2026-07-02T12:00:00.000Z"
+}
+```
+
+**Not found / not owned:** `404` with `{ "message": "List with id=<id> not found." }` (do not use `403`).

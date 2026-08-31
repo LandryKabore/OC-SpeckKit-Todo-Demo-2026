@@ -39,4 +39,11 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Rule | Enforcement | Introduced |
 |------|-------------|------------|
 | Every authenticated request resolves to `req.user.id` from the session | `authenticate` | Feature 1 |
-| `GET /todo/lists` returns only lists owned by the caller | `list.controller.findAll` | Feature 1 |
+| `GET /todo/lists` returns only lists owned by the caller | `list.controller.findAll` | Feature 2 |
+| Cross-user list access → **`404`**, never `403` | `getAccessibleListOrNull` + list controllers | Feature 2 |
+| List name trimmed; empty/whitespace rejected | Create/update API + Dashboard dialogs | Feature 2 |
+| List name max **100** characters | API + client rules | Feature 2 |
+| Lists returned **alphabetically by name** | `findAll` `order: name ASC` | Feature 2 |
+| Single-view lists UI (`Dashboard.vue`); list CRUD via dialogs | Dashboard | Feature 2 |
+| Empty lists: **"No lists yet. Create your first list."** | Dashboard | Feature 2 |
+| `MenuBar` shows signed-in name and **Sign out** on protected routes | `MenuBar.vue` + `App.vue` | Feature 2 |
